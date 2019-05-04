@@ -1,7 +1,7 @@
 /* compile with /usr/local/cuda-10.0/bin/nvcc -arch=compute_XX -o foo.out foo.cu
 *  run with ./foo.out N mode
-*  N is the size of matrix, mode is different way to multiplay matrix
-*  1 represents naive gpu, 2 means tiled gpu, 3 means transposed tiled gpu, 4 means cpu   
+*  N is the size of matrix, mode is different way to multiply matrix
+*  1 represents naive gpu, 2 means tiled gpu, 3 means transposed tiled gpu 
 */
 
 #include <stdio.h>
@@ -30,9 +30,9 @@ __global__ void naive_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
 
     if (row < N && col < N) {
         for (k = 0; k < N; k++) {
-            partial += dev_A[row * N + k] * dev_B[k * row + col];
+            partial += dev_A[row * N + k] * dev_B[k * N + col];
         }
-        dev_C[row, col] = partial;
+        dev_C[row * N + col] = partial;
     }
 }
 
@@ -49,8 +49,8 @@ __global__ void tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
 
     int m;
     for (m = 0; m < N / blockDim.x; ++m) {
-        A_tile[ty][tx] = devA[row * N + m * blockDim.x + tx];
-        B_tile[ty][tx] = devB[N * (m * blockDim.y + ty) + col];
+        A_tile[ty][tx] = dev_A[row * N + m * blockDim.x + tx];
+        B_tile[ty][tx] = dev_B[N * (m * blockDim.y + ty) + col];
         __syncthreads();
         int k;
         for (k = 0; k < blockDim.x; ++k) {
@@ -111,12 +111,13 @@ int main(int argc, char *argv[]) {
     N = atoi(argv[1]);
     mode = atoi(argv[2]);
 
-    float *A, *B, *C, *dev_A, *dev_B, *dev_C;
+    float *A, *B, *C, *CC, *dev_A, *dev_B, *dev_C;
 
     // allocate memory in host
     cudaMallocHost((void **) &A, N * N * sizeof(float));
     cudaMallocHost((void **) &B, N * N * sizeof(float));
     cudaMallocHost((void **) &C, N * N * sizeof(float));
+    cudaMallocHost((void **) &CC, N * N * sizeof(float));
 
     int i, j;
     // initialize matrix A and B
@@ -126,12 +127,6 @@ int main(int argc, char *argv[]) {
             A[i * N + j] = drand48() * MAX_MAT_VALUE;
             B[i * N + j] = drand48() * MAX_MAT_VALUE;
         }
-    }
-
-    if (mode == 4) {
-        cpu_matrixMul(A, B, C, N);
-        print_matrix(C, N);
-        return 0;
     }
 
     float gpu_time, cpu_time;
@@ -163,6 +158,47 @@ int main(int argc, char *argv[]) {
     }
     
     cudaMemcpy(C, dev_C, N * N * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaThreadSynchronize();
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+
+    cudaEventElapsedTime(&gpu_time, start, stop);
     print_matrix(C, N);
+    printf("total time used on gpu matrix multiply: %f ms.\n", gpu_time);
+
+    // start cpu matrix multiply
+    cudaEventRecord(start, 0);
+    cpu_matrixMul(A, B, CC, N);
+
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&cpu_time, start, stop);
+    printf("total time used on cpu matrix multiply: %f ms.\n", cpu_time);
+
+    // validate result
+    int all_right = 1;
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < N; ++j) {
+            if (CC[i * N + j] != C[i * N + j]) {
+                all_right = 0;
+                break;
+            }
+        }
+    }
+
+    if (all_right) {
+        printf("all results are right, speed up by gpu = %f\n", cpu_time / gpu_time);
+    } else {
+        printf("wrong results\n");
+    }
+
+    cudaFree(dev_A);
+    cudaFree(dev_B);
+    cudaFree(dev_C);
+    cudaFreeHost(A);
+    cudaFreeHost(B);
+    cudaFreeHost(C);
+    cudaFreeHost(CC);
+
     return 0;
 }

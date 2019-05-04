@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
     }
     
     cudaMemcpy(C, dev_C, N * N * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
 

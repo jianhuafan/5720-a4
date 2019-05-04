@@ -54,7 +54,7 @@ __global__ void tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
         __syncthreads();
         int k;
         for (k = 0; k < blockDim.x; ++k) {
-            partial += A_tile[ty][k] * B_tile[tx][k];
+            partial += A_tile[ty][k] * B_tile[k][tx];
         }
         __syncthreads();
     }
@@ -80,7 +80,7 @@ __global__ void transposed_tiled_matrxiMul(float *dev_A, float *dev_B, float *de
         __syncthreads();
         int k;
         for (k = 0; k < blockDim.x; ++k) {
-            partial += A_tile[ty][k] * B_tile[k][tx];
+            partial += A_tile[ty][k] * B_tile[tx][k];
         }
         __syncthreads();
     }

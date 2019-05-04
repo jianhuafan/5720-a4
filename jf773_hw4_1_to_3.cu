@@ -28,6 +28,7 @@ __global__ void naive_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
+    int k;
     if (row < N && col < N) {
         for (k = 0; k < N; k++) {
             partial += dev_A[row * N + k] * dev_B[k * N + col];
@@ -37,14 +38,13 @@ __global__ void naive_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
 }
 
 __global__ void tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N) {
-    __shared__ float A_tile[Block_SIZE][Block_SIZE];
-    __shared__ float B_tile[Block_SIZE][Block_SIZE];
+    __shared__ float A_tile[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float B_tile[BLOCK_SIZE][BLOCK_SIZE];
 
     float partial = 0.0;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int bx = blockIdx.x, by = blockIdx.y;
     int tx = threadIdx.x, ty = threadIdx.y;
 
     int m;
@@ -64,14 +64,13 @@ __global__ void tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
 }
 
 __global__ void transposed_tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N) {
-    __shared__ float A_tile[Block_SIZE][Block_SIZE];
-    __shared__ float B_tile[Block_SIZE][Block_SIZE];
+    __shared__ float A_tile[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float B_tile[BLOCK_SIZE][BLOCK_SIZE];
 
     float partial = 0.0;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int bx = blockIdx.x, by = blockIdx.y;
     int tx = threadIdx.x, ty = threadIdx.y;
 
     int m;

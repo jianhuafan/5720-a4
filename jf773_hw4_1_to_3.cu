@@ -93,7 +93,7 @@ void print_matrix(float *A, int N) {
     int i, j;
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
-            printf("%.6f ", A[i * N + j]);
+            printf("%.3f ", A[i * N + j]);
         }
         printf("\n");
     }
@@ -162,7 +162,6 @@ int main(int argc, char *argv[]) {
     cudaEventSynchronize(stop);
 
     cudaEventElapsedTime(&gpu_time, start, stop);
-    print_matrix(C, N);
     printf("total time used on gpu matrix multiply: %f ms.\n", gpu_time);
 
     // start cpu matrix multiply
@@ -179,6 +178,7 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < N; ++i) {
         for (j = 0; j < N; ++j) {
             if (CC[i * N + j] != C[i * N + j]) {
+                printf("%3.f != %3.f\n", C[i * N + j], CC[i * N + j]);
                 all_right = 0;
                 break;
             }
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (all_right) {
-        printf("all results are right, speed up by gpu = %f\n", cpu_time / gpu_time);
+        printf("all results are right, speed up by gpu = %f.2\n", cpu_time / gpu_time);
     } else {
         printf("wrong results\n");
     }

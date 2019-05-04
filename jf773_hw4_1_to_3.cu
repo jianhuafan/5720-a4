@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
     int all_right = 1;
     for (i = 0; i < N; ++i) {
         for (j = 0; j < N; ++j) {
-            if (CC[i * N + j] != C[i * N + j]) {
+            if (abs(CC[i * N + j] - C[i * N + j]) > 1) {
                 printf("%3.f != %3.f\n", C[i * N + j], CC[i * N + j]);
                 all_right = 0;
                 break;

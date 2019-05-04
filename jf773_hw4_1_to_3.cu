@@ -50,11 +50,11 @@ __global__ void tiled_matrxiMul(float *dev_A, float *dev_B, float *dev_C, int N)
     int m;
     for (m = 0; m < N / blockDim.x; ++m) {
         A_tile[ty][tx] = dev_A[row * N + m * blockDim.x + tx];
-        B_tile[ty][tx] = dev_B[N * (m * blockDim.y + ty) + col];
+        B_tile[tx][ty] = dev_B[N * (m * blockDim.y + ty) + col];
         __syncthreads();
         int k;
         for (k = 0; k < blockDim.x; ++k) {
-            partial += A_tile[ty][k] * B_tile[k][tx];
+            partial += A_tile[ty][k] * B_tile[tx][k];
         }
         __syncthreads();
     }

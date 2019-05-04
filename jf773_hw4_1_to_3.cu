@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_MAT_VALUE 1000
+#define MAX_MAT_VALUE 10
 #define BLOCK_SIZE 16
 
 void cpu_matrixMul(float *A, float *B, float *C, int N) {
